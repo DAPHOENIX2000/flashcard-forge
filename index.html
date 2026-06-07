@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcard Forge</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0c0c14;color:#fff;min-height:100vh;display:flex;flex-direction:column}
+
+/* BG */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 10% 20%,rgba(99,102,241,.2) 0%,transparent 60%),radial-gradient(ellipse 60% 60% at 90% 80%,rgba(245,158,11,.12) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+/* HEADER */
+header{position:relative;z-index:2;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(12,12,20,.8);backdrop-filter:blur(12px);display:flex;align-items:stretch}
+.logo-area{padding:1rem 2rem;border-right:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;justify-content:center}
+.logo{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#818cf8,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-tag{font-size:.62rem;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.12em;margin-top:.1rem}
+.header-stats{display:flex;flex:1}
+.hst{flex:1;border-right:1px solid rgba(255,255,255,.07);padding:.8rem 1.5rem;display:flex;flex-direction:column;justify-content:center}
+.hst:last-child{border-right:none}
+.hst .n{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#818cf8,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.hst .l{font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.25);margin-top:.15rem}
+
+/* NAV TABS */
+.tabs{position:relative;z-index:2;display:flex;background:rgba(12,12,20,.9);border-bottom:1px solid rgba(255,255,255,.07)}
+.tab{flex:1;background:none;border:none;color:rgba(255,255,255,.35);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:500;padding:.9rem 1rem;cursor:pointer;transition:all .2s;position:relative}
+.tab:hover{color:rgba(255,255,255,.7)}
+.tab.active{color:#818cf8}
+.tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#818cf8,#f59e0b)}
+
+/* PAGES */
+.page{display:none;position:relative;z-index:1;flex:1}
+.page.active{display:flex;flex-direction:column}
+
+/* ── STUDY ── */
+.study-wrap{display:grid;grid-template-columns:260px 1fr;flex:1}
+.study-side{border-right:1px solid rgba(255,255,255,.07);padding:1.5rem;overflow-y:auto;background:rgba(255,255,255,.02)}
+.ss-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.25);margin-bottom:.8rem;margin-top:1.2rem}
+.ss-label:first-child{margin-top:0}
+.deck-item{padding:.7rem .9rem;border-radius:10px;cursor:pointer;transition:all .2s;display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem;border:1px solid transparent}
+.deck-item:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08)}
+.deck-item.active{background:rgba(129,140,248,.12);border-color:rgba(129,140,248,.3)}
+.deck-name{font-size:.88rem;font-weight:500}
+.deck-sub{font-size:.65rem;color:rgba(255,255,255,.3);margin-top:.1rem}
+.deck-due{background:linear-gradient(135deg,#818cf8,#6366f1);color:#fff;font-size:.65rem;font-weight:700;padding:1px 7px;border-radius:20px}
+.badge-row{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
+.badge{border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.7rem .5rem;text-align:center}
+.badge.earned{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
+.badge .bi{font-size:1.3rem;margin-bottom:.2rem}
+.badge .bn{font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.3)}
+.badge.earned .bn{color:rgba(245,158,11,.7)}
+.sess-stat{display:flex;justify-content:space-between;font-size:.8rem;padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.sess-stat:last-child{border-bottom:none}
+.sess-stat span{color:rgba(255,255,255,.35)}
+
+/* STUDY MAIN */
+.study-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:2.5rem 2rem;gap:1.5rem;overflow-y:auto}
+.prog-row{width:100%;max-width:580px;display:flex;align-items:center;gap:.8rem}
+.prog-bg{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,#818cf8,#f59e0b);border-radius:2px;transition:width .4s}
+.prog-txt{font-size:.72rem;color:rgba(255,255,255,.3);white-space:nowrap}
+
+/* CARD */
+.card-scene{perspective:1200px;width:100%;max-width:580px;height:260px;cursor:pointer}
+.card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.card-inner.flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+.face-front{background:linear-gradient(135deg,rgba(129,140,248,.15),rgba(99,102,241,.08));border:1px solid rgba(129,140,248,.25)}
+.face-back{transform:rotateY(180deg);background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(251,191,36,.08));border:1px solid rgba(245,158,11,.3)}
+.face-label{position:absolute;top:1.2rem;left:1.5rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.2)}
+.face-deck{position:absolute;top:1.2rem;right:1.5rem;font-size:.62rem;color:rgba(255,255,255,.2)}
+.face-text{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:600;line-height:1.4;color:#fff}
+.face-back .face-text{color:#fcd34d}
+.face-hint{font-size:.78rem;color:rgba(255,255,255,.3);margin-top:.6rem}
+.flip-label{font-size:.78rem;color:rgba(255,255,255,.25);font-style:italic}
+
+/* RATING */
+.rating-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;width:100%;max-width:580px}
+.rbtn{border:none;border-radius:12px;padding:.9rem .5rem;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:.82rem;display:flex;flex-direction:column;align-items:center;gap:.3rem;transition:all .2s}
+.rbtn small{font-weight:400;font-size:.65rem;opacity:.7}
+.rbtn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.rbtn.again{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
+.rbtn.hard{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
+.rbtn.good{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
+.rbtn.easy{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+.no-due{text-align:center;padding:4rem 2rem;color:rgba(255,255,255,.2)}
+.no-due .ne{font-size:4rem;margin-bottom:.8rem}
+.no-due p{font-size:.95rem}
+
+/* ── ADD PAGE ── */
+.add-wrap{display:grid;grid-template-columns:1fr 1fr;flex:1}
+.add-form{border-right:1px solid rgba(255,255,255,.07);padding:2rem;overflow-y:auto}
+.add-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:1.5rem;background:linear-gradient(135deg,#818cf8,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.fg{margin-bottom:1rem}
+.fg label{display:block;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.3);margin-bottom:.4rem}
+.fg input,.fg textarea,.fg select{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:'Inter',sans-serif;font-size:.9rem;padding:.7rem 1rem;outline:none;transition:all .2s}
+.fg input:focus,.fg textarea:focus{border-color:rgba(129,140,248,.5);background:rgba(129,140,248,.08);box-shadow:0 0 0 3px rgba(129,140,248,.1)}
+.fg textarea{resize:vertical;min-height:80px}
+.add-card-btn{width:100%;padding:.9rem;background:linear-gradient(135deg,#6366f1,#818cf8);border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:.5rem}
+.add-card-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 24px rgba(99,102,241,.4)}
+.bulk-box{margin-top:1.5rem;padding:1.2rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px}
+.bulk-label{font-size:.7rem;color:rgba(255,255,255,.25);margin-bottom:.6rem}
+.bulk-btn{width:100%;margin-top:.6rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-family:'Inter',sans-serif;font-size:.82rem;padding:.55rem;cursor:pointer;transition:all .15s}
+.bulk-btn:hover{background:rgba(255,255,255,.1)}
+
+.cards-panel{padding:2rem;overflow-y:auto}
+.cp-title{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.25);margin-bottom:1rem}
+.card-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.9rem;margin-bottom:.5rem;display:flex;gap:.8rem;transition:border-color .15s}
+.card-item:hover{border-color:rgba(255,255,255,.12)}
+.ci-content{flex:1;min-width:0}
+.ci-q{font-size:.88rem;font-weight:500;margin-bottom:.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci-a{font-size:.78rem;color:rgba(255,255,255,.35);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci-deck{font-size:.62rem;color:rgba(129,140,248,.5);margin-top:.25rem;text-transform:uppercase;letter-spacing:.06em}
+.ci-del{background:none;border:none;color:rgba(255,255,255,.15);cursor:pointer;font-size:.9rem;transition:color .15s;flex-shrink:0;align-self:flex-start}
+.ci-del:hover{color:#ef4444}
+
+/* ── ACHIEVEMENTS ── */
+.ach-wrap{padding:2rem;max-width:800px;margin:0 auto;width:100%}
+.ach-title{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#818cf8,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1.5rem}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.8rem}
+.ach-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem 1rem;text-align:center;transition:all .2s}
+.ach-card.earned{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)}
+.ach-card:hover{transform:translateY(-2px)}
+.ach-icon{font-size:2.5rem;margin-bottom:.7rem;display:block;filter:grayscale(1) opacity(.3)}
+.ach-card.earned .ach-icon{filter:none}
+.ach-name{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:.3rem;color:rgba(255,255,255,.3)}
+.ach-card.earned .ach-name{color:#fcd34d}
+.ach-desc{font-size:.68rem;color:rgba(255,255,255,.2);line-height:1.4}
+.ach-stamp{font-size:.6rem;color:rgba(245,158,11,.6);margin-top:.4rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+
+@media(max-width:700px){.study-wrap,.add-wrap{grid-template-columns:1fr}.study-side{display:none}.cards-panel{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-area">
+    <div class="logo">FlashForge</div>
+    <div class="logo-tag">Spaced Repetition Engine</div>
+  </div>
+  <div class="header-stats">
+    <div class="hst"><div class="n" id="hdue">0</div><div class="l">Due Now</div></div>
+    <div class="hst"><div class="n" id="htotal">0</div><div class="l">Total Cards</div></div>
+    <div class="hst"><div class="n" id="hstreak">0</div><div class="l">Day Streak</div></div>
+    <div class="hst"><div class="n" id="hmaster">0</div><div class="l">Mastered</div></div>
+  </div>
+</header>
+<div class="tabs">
+  <button class="tab active" onclick="showPage('study',this)">⚡ Study</button>
+  <button class="tab" onclick="showPage('add',this)">＋ Add Cards</button>
+  <button class="tab" onclick="showPage('ach',this)">🏆 Achievements</button>
+</div>
+
+<!-- STUDY -->
+<div class="page active" id="study">
+  <div class="study-wrap">
+    <div class="study-side">
+      <div class="ss-label">Decks</div>
+      <div id="deck-list"></div>
+      <div class="ss-label" style="margin-top:1rem">Session</div>
+      <div id="sess-stats"></div>
+      <div class="ss-label" style="margin-top:1rem">Achievements</div>
+      <div class="badge-row" id="badge-mini"></div>
+    </div>
+    <div class="study-main" id="study-main"></div>
+  </div>
+</div>
+
+<!-- ADD -->
+<div class="page" id="add">
+  <div class="add-wrap">
+    <div class="add-form">
+      <div class="add-title">Add a Card</div>
+      <div class="fg"><label>Deck</label><input id="f-deck" placeholder="e.g. Spanish, JS Concepts, Biology…"></div>
+      <div class="fg"><label>Front — Question</label><textarea id="f-front" placeholder="What's on the front of this card?"></textarea></div>
+      <div class="fg"><label>Back — Answer</label><textarea id="f-back" placeholder="The answer or explanation…"></textarea></div>
+      <div class="fg"><label>Hint (optional)</label><input id="f-hint" placeholder="A small clue for when you're stuck…"></div>
+      <button class="add-card-btn" onclick="addCard()">Add Card to Deck →</button>
+      <div class="bulk-box">
+        <div class="bulk-label">Bulk Import — one card per line: <em>Front | Back</em></div>
+        <textarea class="fg" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-family:'Inter',sans-serif;font-size:.8rem;padding:.6rem;outline:none;min-height:70px;resize:vertical" id="bulk" placeholder="What is 2+2? | 4&#10;Capital of France | Paris"></textarea>
+        <button class="bulk-btn" onclick="bulkImport()">Import All →</button>
+      </div>
+    </div>
+    <div class="cards-panel">
+      <div class="cp-title">All Cards (<span id="card-count">0</span>)</div>
+      <div id="all-cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ACHIEVEMENTS -->
+<div class="page" id="ach">
+  <div class="ach-wrap">
+    <div class="ach-title">Achievements</div>
+    <div class="ach-grid" id="ach-grid"></div>
+  </div>
+</div>
+
+<script>
+const BADGES=[
+  {id:'first',icon:'🌱',name:'First Card',desc:'Add your first flashcard',check:c=>c.length>=1},
+  {id:'ten',icon:'🔟',name:'Ten Cards',desc:'Build a deck of 10 cards',check:c=>c.length>=10},
+  {id:'fifty',icon:'💪',name:'Fifty Cards',desc:'Reach 50 flashcards',check:c=>c.length>=50},
+  {id:'streak3',icon:'🔥',name:'3-Day Fire',desc:'Study 3 days in a row',check:()=>getStreak()>=3},
+  {id:'streak7',icon:'⚡',name:'Week Warrior',desc:'7-day study streak',check:()=>getStreak()>=7},
+  {id:'perfect',icon:'🏆',name:'Flawless',desc:'100% session accuracy (5+ cards)',check:()=>!!localStorage.getItem('ff_perfect')},
+  {id:'speed',icon:'🚀',name:'Speed Run',desc:'Review 20 cards in one session',check:()=>(+localStorage.getItem('ff_maxsess')||0)>=20},
+  {id:'master',icon:'🎓',name:'Scholar',desc:'Master 10 cards (Easy ×3)',check:c=>c.filter(x=>(x.ec||0)>=3).length>=10},
+];
+
+let cards=JSON.parse(localStorage.getItem('ff3')||'[]');
+let streak=+localStorage.getItem('ff3_streak')||0;
+let lastStudy=localStorage.getItem('ff3_last')||'';
+let selDeck=null,sessR=0,sessC=0,sessS=0,due=[],idx=0,flipped=false;
+
+const save=()=>localStorage.setItem('ff3',JSON.stringify(cards));
+const getStreak=()=>streak;
+const getDue=()=>{const now=Date.now();let p=selDeck?cards.filter(c=>c.deck===selDeck):cards;return p.filter(c=>!c.nr||c.nr<=now)};
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');btn.classList.add('active');
+  if(id==='study'){renderSide();renderCard2()}
+  if(id==='add'){renderAllCards()}
+  if(id==='ach'){renderAch()}
+}
+
+function renderSide(){
+  const byDeck={};cards.forEach(c=>{if(!byDeck[c.deck])byDeck[c.deck]={t:0,d:0,m:0};
+    byDeck[c.deck].t++;if(!c.nr||c.nr<=Date.now())byDeck[c.deck].d++;if((c.ec||0)>=3)byDeck[c.deck].m++});
+  document.getElementById('deck-list').innerHTML=
+    `<div class="deck-item ${!selDeck?'active':''}" onclick="selDeck2(null)"><div><div class="deck-name">All Decks</div><div class="deck-sub">${cards.length} cards · ${getDue().length} due</div></div></div>`+
+    Object.entries(byDeck).map(([n,s])=>`
+      <div class="deck-item ${selDeck===n?'active':''}" onclick="selDeck2('${n}')">
+        <div><div class="deck-name">${n}</div><div class="deck-sub">${s.t} cards · ${s.d} due</div></div>
+        ${s.d>0?`<span class="deck-due">${s.d}</span>`:''}
+      </div>`).join('');
+  document.getElementById('sess-stats').innerHTML=
+    `<div class="sess-stat"><span>Reviewed</span><strong>${sessR}</strong></div>
+     <div class="sess-stat"><span>Correct</span><strong style="color:#4ade80">${sessC}</strong></div>
+     <div class="sess-stat"><span>Struggled</span><strong style="color:#f87171">${sessS}</strong></div>
+     <div class="sess-stat"><span>Accuracy</span><strong style="color:#fcd34d">${sessR?Math.round(sessC/sessR*100)+'%':'—'}</strong></div>`;
+  const earned=BADGES.filter(b=>b.check(cards));
+  document.getElementById('badge-mini').innerHTML=BADGES.slice(0,6).map(b=>`
+    <div class="badge ${earned.find(e=>e.id===b.id)?'earned':''}">
+      <div class="bi">${b.icon}</div><div class="bn">${b.name}</div>
+    </div>`).join('');
+  document.getElementById('hdue').textContent=getDue().length;
+  document.getElementById('htotal').textContent=cards.length;
+  document.getElementById('hstreak').textContent=streak;
+  document.getElementById('hmaster').textContent=cards.filter(c=>(c.ec||0)>=3).length;
+}
+
+function selDeck2(d){selDeck=d;renderSide();due=getDue();idx=0;flipped=false;renderCard2()}
+
+function renderCard2(){
+  due=getDue();
+  const sm=document.getElementById('study-main');
+  if(!due.length){sm.innerHTML=`<div class="no-due"><div class="ne">${cards.length?'🎉':'📭'}</div><p>${cards.length?'All caught up! No cards due right now.':'No cards yet. Add some in the Add Cards tab.'}</p></div>`;return}
+  const c=due[idx%due.length];
+  const pct=Math.round(sessR/Math.max(sessR+due.length,1)*100);
+  sm.innerHTML=`
+    <div class="prog-row"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-txt">${sessR} done · ${due.length} left</div></div>
+    <div class="card-scene" onclick="flipCard()">
+      <div class="card-inner ${flipped?'flip':''}" id="ci">
+        <div class="face face-front"><span class="face-label">Question</span><span class="face-deck">${c.deck}</span><div class="face-text">${c.front}</div>${c.hint?`<div class="face-hint">💡 ${c.hint}</div>`:''}</div>
+        <div class="face face-back"><span class="face-label">Answer</span><div class="face-text">${c.back}</div></div>
+      </div>
+    </div>
+    <div class="flip-label">${flipped?'How well did you know this?':'Tap the card to reveal the answer'}</div>
+    <div class="rating-grid" style="display:${flipped?'grid':'none'}">
+      <button class="rbtn again" onclick="rate(0)">Again<small>&lt; 1 min</small></button>
+      <button class="rbtn hard" onclick="rate(1)">Hard<small>10 min</small></button>
+      <button class="rbtn good" onclick="rate(2)">Good<small>1 day</small></button>
+      <button class="rbtn easy" onclick="rate(3)">Easy<small>4 days</small></button>
+    </div>`;
+}
+
+function flipCard(){if(flipped)return;flipped=true;renderCard2()}
+
+function rate(q){
+  const ivls=[60000,600000,86400000,345600000];
+  const card=cards.find(x=>x.id===due[idx%due.length].id);
+  if(card){card.nr=Date.now()+ivls[q];card.ec=q>=2?(card.ec||0)+1:0}
+  save();sessR++;if(q>=2)sessC++;else sessS++;
+  if(sessR>=5&&sessS===0)localStorage.setItem('ff_perfect','1');
+  localStorage.setItem('ff_maxsess',Math.max(sessR,+localStorage.getItem('ff_maxsess')||0));
+  updateStreak();idx++;flipped=false;renderCard2();renderSide();
+}
+
+function updateStreak(){
+  const today=new Date().toDateString(),yest=new Date(Date.now()-86400000).toDateString();
+  if(lastStudy===today)return;
+  streak=lastStudy===yest?streak+1:1;lastStudy=today;
+  localStorage.setItem('ff3_streak',streak);localStorage.setItem('ff3_last',today);
+}
+
+function addCard(){
+  const deck=document.getElementById('f-deck').value.trim()||'General';
+  const front=document.getElementById('f-front').value.trim();
+  const back=document.getElementById('f-back').value.trim();
+  const hint=document.getElementById('f-hint').value.trim();
+  if(!front||!back){alert('Fill in both sides.');return}
+  cards.push({id:Date.now()+Math.random(),deck,front,back,hint,nr:null,ec:0});
+  save();document.getElementById('f-front').value='';document.getElementById('f-back').value='';document.getElementById('f-hint').value='';
+  renderAllCards();renderSide();
+}
+function bulkImport(){
+  const deck=document.getElementById('f-deck').value.trim()||'General';
+  let n=0;
+  document.getElementById('bulk').value.split('\n').forEach(l=>{
+    const[f,b]=l.split('|').map(s=>s.trim());
+    if(f&&b){cards.push({id:Date.now()+Math.random(),deck,front:f,back:b,hint:'',nr:null,ec:0});n++}
+  });
+  save();document.getElementById('bulk').value='';renderAllCards();renderSide();if(n)alert(`Imported ${n} cards!`);
+}
+function deleteCard(id){cards=cards.filter(c=>c.id!==id);save();renderAllCards();renderSide()}
+function renderAllCards(){
+  document.getElementById('card-count').textContent=cards.length;
+  document.getElementById('all-cards').innerHTML=[...cards].reverse().map(c=>`
+    <div class="card-item">
+      <div class="ci-content">
+        <div class="ci-q">${c.front}</div>
+        <div class="ci-a">${c.back}</div>
+        <div class="ci-deck">${c.deck}${(c.ec||0)>=3?' · ✓ Mastered':''}</div>
+      </div>
+      <button class="ci-del" onclick="deleteCard(${c.id})">✕</button>
+    </div>`).join('')||'<div style="color:rgba(255,255,255,.2);font-size:.85rem">No cards yet. Add one →</div>';
+}
+function renderAch(){
+  const earned=BADGES.filter(b=>b.check(cards));
+  document.getElementById('ach-grid').innerHTML=BADGES.map(b=>{
+    const e=earned.find(x=>x.id===b.id);
+    return`<div class="ach-card ${e?'earned':''}">
+      <span class="ach-icon">${b.icon}</span>
+      <div class="ach-name">${b.name}</div>
+      <div class="ach-desc">${b.desc}</div>
+      ${e?'<div class="ach-stamp">✓ Earned</div>':''}
+    </div>`;}).join('');
+}
+
+renderSide();renderCard2();
+</script>
+</body>
+</html>
